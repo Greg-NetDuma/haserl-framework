@@ -1,5 +1,11 @@
 # Haserl Framework
 
+## DumaOS setup
+
+1. 
+
+## Requirements
+
 The Haserl Framework is a set of shell scripts and functions that allow one to build
 MVC-style web applications based on shell scripting and haserl templating.
 It is similar to Ruby's Sinatra framework in structure, functionality, and spirit.
@@ -16,23 +22,22 @@ was OpenWRT's Ash/Busybox shell.
 
 * A web application written with the framework's shell-based DSL
   is run as a daemon.
-  
-* The web server sends requests to the daemon using one of two methods.
 
+* The web server sends requests to the daemon using one of two methods.
+  
   * Requests are passed to and from the web server, via scgi request, to a socket
     or tcp listener managed by the framework daemon.
   
   * Requests are passed (and responses received) through a pair of FIFO
     files managed by the framework daemon.
-   
+
 * Subshells wrap each request process to prevent undesirable modification
   of the daemon environment.
-  
+
 * During request processing, Haserl env variables are accessible in both
   the 'action' and the 'views'.
-  
-* Views, including layouts and partials, are rendered with Haserl.
 
+* Views, including layouts and partials, are rendered with Haserl.
 
 ## Dependencies
 
@@ -46,83 +51,50 @@ was OpenWRT's Ash/Busybox shell.
 
 *```socat``` is not required if your app runs on a single system under CGI only.*
 
-
-## Installation
+## Installation to DumaOS
 
 Clone the haserl-framework library with Git.
 
-    cd /usr/local/
+- Clone this repo
 
-    git clone https://github.com/ginjo/haserl-framework.git
+- Copy everything in this repo to `/lib/haserl_framework/` onto the router.
 
-Install dependencies. Example for OpenWRT/Busybox:
-
-    opkg update
-    
-    opkg install coreutils-base64 gnupg haserl socat
-
-
-## Basic Setup
+## Basic setup
 
 Create an app directory with the following structure:
 
 ```text
-  my_app_dir/
-   |-- app.sh
+  haserl_famework/
+   |-- haserl_scgi.sh
+   |-- .env
+   |-- helpers/
+        |-- route.sh
    |-- views/
         |-- layout
         |-- home
 ```
 
-In the ```app.sh``` file (or whatever you want to name it), add the following shell code:
+In the ```haserl_scgi.sh``` file (or whatever you want to name it), add the following shell code:
+
 ```shell
   # app.sh
-  
+
   eval $(<path-to-haserl-framework/lib/load.sh>)
+```
 
-  route '/home' <optional-request-method> <<- !!
+In the `helpers/routes.sh` file add the following shell code:
+
+```shell
+route '/home' <optional-request-method> <<- !!
     # render <view-file> <optional-layout-file>
-    render home.html layout.html
-  !!
-
-  start scgi  # <scgi|cgi|http>
-```
-Note the ```route``` and ```render``` functions. They are part of a simple DSL that
-is the core UI of the framework. More on that below.
-
-
-In the views directory, create a view file and populate it with haserl template code:
-```haserl
-    <!-- views/home.html -->
-    
-    <% . $HF_FRAMEWORK %>
-    
-    <h3>Linux Release</h3>
-    <pre>
-      <% cat /etc/*release %>
-    </pre>
+    # ../../../www/dumaweb/index.html
+    render home.html
+!!
 ```
 
-Optionally create a layout file in the views directory:
-```haserl
-    <!-- views/home.html -->
+Note that the file path is always relative to `$APPDIR/views`.
 
-    <% . $HF_FRAMEWORK %>
-    
-    <html>
-    <body>
-      <div>
-        <% yield %>
-      </div>
-    </body>
-    </html>
-```
 
-See the haserl man page for templating syntax.
-
-Some shells can't export functions, but others can.
-If you're using a shell that can export functions,
-you don't need to source the framework functions in your views.
 
 If you are using a web server with SCGI reverse-proxy capabilities,
 point the scgi-proxy-pass directive to the backend URL.
@@ -130,7 +102,7 @@ Here's an NGINX example:
 
 ```nginx
   # nginx.conf
-  
+
   location /my_app {
     include   scgi_params;
     scgi_pass localhost:1500;
@@ -144,7 +116,7 @@ to get path-info, script-name, and request-scheme variables passed to your appli
 
 ```nginx
   # nginx.conf
-  
+
   # Path-info and script-name must be calculated by nginx.
   # Note the use of fastcgi functions. These work even though we're using scgi.
   #
@@ -156,33 +128,28 @@ to get path-info, script-name, and request-scheme variables passed to your appli
   scgi_param  REQUEST_SCHEME     $scheme;
 ```
 
-If you are using CGI, create a CGI script and insert the following code.
-Remember to adjust the file paths and shebang line to suit your installation.
-You can name the file anything. In this example ```proxy.cgi``` is a descriptive name,
-since the cgi script is simply passing data to the framework daemon.
-
-```haserl
-  #!/usr/sh
-  <% export -p > /tmp/fifo_input && cat /tmp/fifo_output %>
-```
-
 Start the server:
 
 ```shell
-  sh app.sh
-  
+  sh haserl_scgi.sh start
+
   # or 
-  
-  ./app.sh  # if executable
+
+  ./haserl_scgi.sh  start # if executable
 ```
 
 Make a request in your browser.
 Adjust the URL to suit your http server and CGI implementation.
 
 ```
-  http://localhost/cgi-bin/proxy.cgi/home
+  http://localhost/home
 ```
 
+## Current problems
+
+* Path matching is not working properly I think?
+
+* Passing current url into route is not working? could not figure it out.
 
 ## Settings & Configuration
 
@@ -191,14 +158,13 @@ To be safe, it is recommended to store these settings in a separate file that is
 not checked into your source repository. Then source the settings file
 in your app.sh file _before_ sourcing haserl-framework.sh.
 
-| Name          | Description                               | Default                 |
-| ---           | ---                                       | ---                     |
-| SECRET        | secret key string for cookie encryption   | \<calculated\>          |
-| FIFO_INPUT    | path and name of fifo input file          | fifo_input              |
-| FIFO_OUTPUT   | path and name of fifo output file         | fifo_output             |
-| APPDIR        | path to app directory                     | \<calculated\>          |
-| LOG_LEVEL     | 1 through 6 (FATAL through TRACE)         | 4 (INFO)                |
-
+| Name        | Description                             | Default        |
+| ----------- | --------------------------------------- | -------------- |
+| SECRET      | secret key string for cookie encryption | \<calculated\> |
+| FIFO_INPUT  | path and name of fifo input file        | fifo_input     |
+| FIFO_OUTPUT | path and name of fifo output file       | fifo_output    |
+| APPDIR      | path to app directory                   | \<calculated\> |
+| LOG_LEVEL   | 1 through 6 (FATAL through TRACE)       | 4 (INFO)       |
 
 ## Usage
 
@@ -217,4 +183,3 @@ in your app.sh file _before_ sourcing haserl-framework.sh.
 ### Helpers...
 
 ### Security...
-

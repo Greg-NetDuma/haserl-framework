@@ -112,10 +112,10 @@ render() {
       #export top_level_template="$template"
       headers
       #echo "Calling haserl layout with '$APPDIR/views/$layout'" >&2
-      echo "${REQUEST_BODY:-$POST_body}" | haserl "$APPDIR/views/$layout"
+      echo "${REQUEST_BODY:-$POST_body}" | haserl --shell=lua "$APPDIR/views/$layout"
     else
       #echo "Calling haserl view with '$APPDIR/views/$template'" >&2
-      echo "${REQUEST_BODY:-$POST_body}" | haserl "$APPDIR/views/$template"
+      echo "${REQUEST_BODY:-$POST_body}" | haserl --shell=lua "$APPDIR/views/$template"
     fi
   )
 }
