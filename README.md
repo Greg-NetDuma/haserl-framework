@@ -1,11 +1,5 @@
 # Haserl Framework
 
-## DumaOS setup
-
-1. 
-
-## Requirements
-
 The Haserl Framework is a set of shell scripts and functions that allow one to build
 MVC-style web applications based on shell scripting and haserl templating.
 It is similar to Ruby's Sinatra framework in structure, functionality, and spirit.
@@ -93,8 +87,6 @@ route '/home' <optional-request-method> <<- !!
 ```
 
 Note that the file path is always relative to `$APPDIR/views`.
-
-
 
 If you are using a web server with SCGI reverse-proxy capabilities,
 point the scgi-proxy-pass directive to the backend URL.
